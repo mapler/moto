@@ -113,6 +113,65 @@ class EmailResponse(BaseResponse):
         template = self.response_template(SET_IDENTITY_NOTIFICATION_TOPIC_RESPONSE)
         return template.render()
 
+    def create_template(self):
+        name = self.querystring.get('Template.TemplateName')[0]
+        subject_part = self.querystring.get('Template.SubjectPart')[0]
+        text_part = self.querystring.get('Template.TextPart')[0]
+        html_part = self.querystring.get('Template.HtmlPart')[0]
+        ses_template = ses_backend.get_template(name)
+        if ses_template:
+            template = self.response_template(CREATE_TEMPLATE_EXIST_ERROR)
+            return 400, {'status': 400}, template.render()
+        else:
+            ses_backend.create_template(name=name, subject_part=subject_part, text_part=text_part, html_part=html_part)
+            template = self.response_template(CREATE_TEMPLATE_RESPONSE)
+            return template.render()
+
+    def update_template(self):
+        name = self.querystring.get('Template.TemplateName')[0]
+        subject_part = self.querystring.get('Template.SubjectPart')[0]
+        text_part = self.querystring.get('Template.TextPart')[0]
+        html_part = self.querystring.get('Template.HtmlPart')[0]
+        ses_template = ses_backend.get_template(name)
+        if ses_template:
+            ses_backend.update_template(name=name, subject_part=subject_part, text_part=text_part, html_part=html_part)
+            template = self.response_template(UPDATE_TEMPLATE_RESPONSE)
+            return template.render(template=ses_template)
+        else:
+            template = self.response_template(GET_TEMPLATE_ERROR)
+            return 400, {'status': 400}, template.render()
+
+    def get_template(self):
+        name = self.querystring.get('TemplateName')[0]
+        ses_template = ses_backend.get_template(name)
+        if ses_template:
+            template = self.response_template(GET_TEMPLATE_RESPONSE)
+            return template.render(template=ses_template)
+        else:
+            template = self.response_template(GET_TEMPLATE_ERROR)
+            return 400, {'status': 400}, template.render()
+
+    def delete_template(self):
+        name = self.querystring.get('TemplateName')[0]
+        ses_backend.delete_template(name)
+        template = self.response_template(DELETE_TEMPLATE_RESPONSE)
+        return template.render()
+
+    def list_templates(self):
+        ses_templates = ses_backend.list_templates()
+        template = self.response_template(LIST_TEMPLATES_RESPONSE)
+        return template.render(ses_templates=ses_templates)
+
+    def send_bulk_templated_email(self):
+        name = self.querystring.get('Template')[0]
+        ses_template = ses_backend.get_template(name)
+        if ses_template:
+            template = self.response_template(SEND_BULK_TEMPLATED_EMAIL_RESPONSE)
+            return template.render()
+        else:
+            template = self.response_template(GET_TEMPLATE_ERROR)
+            return 400, {'status': 400}, template.render()
+
 
 VERIFY_EMAIL_IDENTITY = """<VerifyEmailIdentityResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
   <VerifyEmailIdentityResult/>
@@ -219,3 +278,86 @@ SET_IDENTITY_NOTIFICATION_TOPIC_RESPONSE = """<SetIdentityNotificationTopicRespo
     <RequestId>47e0ef1a-9bf2-11e1-9279-0100e8cf109a</RequestId>
   </ResponseMetadata>
 </SetIdentityNotificationTopicResponse>"""
+
+SEND_BULK_TEMPLATED_EMAIL_RESPONSE = """<SendBulkTemplatedEmailResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+  <SendBulkTemplatedEmailResult>
+    <Status>
+      <Status>Success</Status>
+    </Status>
+  </SendBulkTemplatedEmailResult>
+  <ResponseMetadata>
+    <RequestId>cacecf23-9bf1-11e1-9279-0100e8cf109a</RequestId>
+  </ResponseMetadata>
+</SendBulkTemplatedEmailResponse>"""
+
+CREATE_TEMPLATE_RESPONSE = """<CreateTemplateResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+  <CreateTemplateResult/>
+  <ResponseMetadata>
+    <RequestId>cacecf23-9bf1-11e1-9279-0100e8cf109a</RequestId>
+  </ResponseMetadata>
+</CreateTemplateResponse>"""
+
+CREATE_TEMPLATE_EXIST_ERROR = """
+<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+  <Error>
+    <Code>AlreadyExists</Code>
+    <Message>Indicates that a resource could not be created because of a naming conflict.</Message>
+  </Error>
+  <RequestId>cacecf23-9bf1-11e1-9279-0100e8cf109a</RequestId>
+</ErrorResponse>
+"""
+
+UPDATE_TEMPLATE_RESPONSE = """<UpdateTemplateResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+  <UpdateTemplateResult/>
+  <ResponseMetadata>
+    <RequestId>cacecf23-9bf1-11e1-9279-0100e8cf109a</RequestId>
+  </ResponseMetadata>
+</UpdateTemplateResponse>"""
+
+GET_TEMPLATE_RESPONSE = """<GetTemplateResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+  <GetTemplateResult>
+    <Template>
+      <TemplateName>{{ template.name }}</TemplateName>
+      <SubjectPart>{{ template.subject_part }}</SubjectPart>
+      <TextPart>{{ template.text_part }}</TextPart>
+      <HtmlPart>{{ template.html_part }}</HtmlPart>
+    </Template>
+  </GetTemplateResult>
+  <ResponseMetadata>
+    <RequestId>cacecf23-9bf1-11e1-9279-0100e8cf109a</RequestId>
+  </ResponseMetadata>
+</GetTemplateResponse>"""
+
+GET_TEMPLATE_ERROR = """
+<ErrorResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+  <Error>
+    <Code>TemplateDoesNotExist</Code>
+    <Message>Indicates that the Template object you specified does not exist in your Amazon SES account.</Message>
+  </Error>
+  <RequestId>cacecf23-9bf1-11e1-9279-0100e8cf109a</RequestId>
+</ErrorResponse>
+"""
+
+DELETE_TEMPLATE_RESPONSE = """<DeleteTemplateResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+  <DeleteTemplateResult/>
+  <ResponseMetadata>
+    <RequestId>cacecf23-9bf1-11e1-9279-0100e8cf109a</RequestId>
+  </ResponseMetadata>
+</DeleteTemplateResponse>"""
+
+LIST_TEMPLATES_RESPONSE = """<ListTemplatesResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+  <ListTemplatesResult>
+    <TemplatesMetadata>
+      {% for template in ses_templates %}
+        <member>
+          <Name>{{ template.name }}</Name>
+          <CreatedTimestamp>1546268400</CreatedTimestamp>
+        </member>
+      {% endfor %}
+    </TemplatesMetadata>
+    <NextToken/>
+  </ListTemplatesResult>
+  <ResponseMetadata>
+    <RequestId>cacecf23-9bf1-11e1-9279-0100e8cf109a</RequestId>
+  </ResponseMetadata>
+</ListTemplatesResponse>"""

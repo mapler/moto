@@ -68,6 +68,15 @@ class SESQuota(BaseModel):
         return self.sent
 
 
+class SESTemplate(BaseModel):
+
+    def __init__(self, name, subject_part, text_part, html_part):
+        self.name = name
+        self.subject_part = subject_part
+        self.text_part = text_part
+        self.html_part = html_part
+
+
 class SESBackend(BaseBackend):
 
     def __init__(self):
@@ -77,6 +86,7 @@ class SESBackend(BaseBackend):
         self.sent_messages = []
         self.sent_message_count = 0
         self.sns_topics = {}
+        self.templates = {}
 
     def _is_verified_address(self, source):
         _, address = parseaddr(source)
@@ -206,5 +216,28 @@ class SESBackend(BaseBackend):
 
         return {}
 
+    def create_template(self, name, subject_part, text_part, html_part):
+        ses_template = SESTemplate(name=name,
+                                   subject_part=subject_part,
+                                   text_part=text_part,
+                                   html_part=html_part)
+        self.templates[name] = ses_template
+
+    def update_template(self, name, subject_part, text_part, html_part):
+        ses_template = SESTemplate(name=name,
+                                   subject_part=subject_part,
+                                   text_part=text_part,
+                                   html_part=html_part)
+        self.templates[name] = ses_template
+
+    def get_template(self, name):
+        return self.templates.get(name)
+
+    def delete_template(self, name):
+        if name in self.templates:
+            del self.templates[name]
+
+    def list_templates(self):
+        return self.templates.values()
 
 ses_backend = SESBackend()
